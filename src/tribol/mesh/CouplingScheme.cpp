@@ -1172,7 +1172,7 @@ void CouplingScheme::setSlicLoggingLevel()
   // set slic logging level for coupling schemes that have API modified logging levels
   if ( this->m_loggingLevel != LoggingLevel::UNDEFINED ) {
     switch ( this->m_loggingLevel ) {
-      case LoggingLevel::DEBUG: {
+      case LoggingLevel::Debug: {
         axom::slic::setLoggingMsgLevel( axom::slic::message::Debug );
         break;
       }
