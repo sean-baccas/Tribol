@@ -703,11 +703,17 @@ MfemJacobianData::MfemJacobianData( const MfemMeshData& parent_data, const MfemS
   auto submesh_parent_I = redecomp::ArrayUtility::IndexArray<int>( submesh2parent_vdof_list_.Size() + 1 );
   mfem::Vector submesh_parent_data( submesh2parent_vdof_list_.Size() );
   submesh_parent_data = 1.0;
+
+  int* J = submesh2parent_vdof_list_.GetData();
+  HYPRE_BigInt* J_ll = new HYPRE_BigInt[submesh_fes.GetVSize()];
+  for (auto i=0; i<submesh_fes.GetVSize(); i++) J_ll[i] = static_cast<HYPRE_BigInt>(J[i]);
+
   // This constructor copies all of the data, so don't worry about ownership of the CSR data
   submesh_parent_vdof_xfer_ = std::make_unique<mfem::HypreParMatrix>(
       TRIBOL_COMM_WORLD, submesh_fes.GetVSize(), submesh_fes.GlobalVSize(), parent_fes.GlobalVSize(),
-      submesh_parent_I.data(), submesh2parent_vdof_list_.GetData(), submesh_parent_data.GetData(),
+      submesh_parent_I.data(), J_ll, submesh_parent_data.GetData(),
       submesh_fes.GetDofOffsets(), parent_fes.GetDofOffsets() );
+  delete[] J_ll;
 
   auto disp_size = parent_data_.GetParentCoords().ParFESpace()->GetTrueVSize();
   auto lm_size = submesh_data_.GetSubmeshPressure().ParFESpace()->GetTrueVSize();
@@ -876,10 +882,16 @@ std::unique_ptr<mfem::BlockOperator> MfemJacobianData::GetMfemBlockJacobian( con
   auto& parent_trial_fes = *parent_data_.GetParentCoords().ParFESpace();
   // NOTE: we don't call MatrixTransfer::ConvertToHypreParMatrix() because the
   // trial space is on the parent mesh, not the submesh
+
+  int* J_ = submesh_J.GetJ();
+  HYPRE_BigInt* J_ll = new HYPRE_BigInt[submesh_fes.GetVSize()];
+  for (auto i=0; i<submesh_fes.GetVSize(); i++) J_ll[i] = static_cast<HYPRE_BigInt>(J_[i]);
+
   auto J_full = std::make_unique<mfem::HypreParMatrix>( mpi.MPIComm(), submesh_fes.GetVSize(),
                                                         submesh_fes.GlobalVSize(), parent_trial_fes.GlobalVSize(),
-                                                        submesh_J.GetI(), submesh_J.GetJ(), submesh_J.GetData(),
+                                                        submesh_J.GetI(), J_ll, submesh_J.GetData(),
                                                         submesh_fes.GetDofOffsets(), parent_trial_fes.GetDofOffsets() );
+  delete[] J_ll;
   auto J_true = std::unique_ptr<mfem::HypreParMatrix>(
       mfem::RAP( submesh_fes.Dof_TrueDof_Matrix(), J_full.get(), parent_trial_fes.Dof_TrueDof_Matrix() ) );
 

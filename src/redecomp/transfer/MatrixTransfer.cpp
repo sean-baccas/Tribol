@@ -147,10 +147,17 @@ std::unique_ptr<mfem::HypreParMatrix> MatrixTransfer::ConvertToHypreParMatrix( m
   SLIC_ERROR_IF( sparse.Width() != parent_trial_fes_.GlobalVSize(),
                  "Width of sparse must match number of trial ParFiniteElementSpace global dofs." );
 
+  // hacky workaround for SparseMatrix returning int instead of long long int
+  int* J = sparse.GetJ();
+  HYPRE_BigInt* J_ll = new HYPRE_BigInt[parent_test_fes_.GetVSize()];
+  for (auto i=0; i<parent_test_fes_.GetVSize(); i++) J_ll[i] = static_cast<HYPRE_BigInt>(J[i]);
+
   auto J_full = std::make_unique<mfem::HypreParMatrix>(
       getMPIUtility().MPIComm(), parent_test_fes_.GetVSize(), parent_test_fes_.GlobalVSize(),
-      parent_trial_fes_.GlobalVSize(), sparse.GetI(), sparse.GetJ(), sparse.GetData(), parent_test_fes_.GetDofOffsets(),
+      parent_trial_fes_.GlobalVSize(), sparse.GetI(), J_ll, sparse.GetData(), parent_test_fes_.GetDofOffsets(),
       parent_trial_fes_.GetDofOffsets() );
+  delete[] J_ll;
+
   if ( !parallel_assemble ) {
     return J_full;
   } else {
