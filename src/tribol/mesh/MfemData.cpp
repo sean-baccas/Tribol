@@ -884,8 +884,10 @@ std::unique_ptr<mfem::BlockOperator> MfemJacobianData::GetMfemBlockJacobian( con
   // trial space is on the parent mesh, not the submesh
 
   int* J_ = submesh_J.GetJ();
-  HYPRE_BigInt* J_ll = new HYPRE_BigInt[submesh_fes.GetVSize()];
-  for (auto i=0; i<submesh_fes.GetVSize(); i++) J_ll[i] = static_cast<HYPRE_BigInt>(J_[i]);
+  int num_rows = submesh_fes.GetVSize();
+  int array_size = submesh_J.GetI()[num_rows];
+  HYPRE_BigInt* J_ll = new HYPRE_BigInt[array_size];
+  for (auto i=0; i<array_size; i++) J_ll[i] = static_cast<HYPRE_BigInt>(J_[i]);
 
   auto J_full = std::make_unique<mfem::HypreParMatrix>( mpi.MPIComm(), submesh_fes.GetVSize(),
                                                         submesh_fes.GlobalVSize(), parent_trial_fes.GlobalVSize(),
