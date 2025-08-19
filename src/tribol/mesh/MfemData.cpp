@@ -705,8 +705,10 @@ MfemJacobianData::MfemJacobianData( const MfemMeshData& parent_data, const MfemS
   submesh_parent_data = 1.0;
 
   int* J = submesh2parent_vdof_list_.GetData();
-  HYPRE_BigInt* J_ll = new HYPRE_BigInt[submesh_fes.GetVSize()];
-  for (auto i=0; i<submesh_fes.GetVSize(); i++) J_ll[i] = static_cast<HYPRE_BigInt>(J[i]);
+  int num_rows = submesh_fes.GetVSize();
+  int array_size = submesh_parent_I.data()[num_rows];
+  HYPRE_BigInt* J_ll = new HYPRE_BigInt[array_size];
+  for (auto i=0; i<array_size; i++) J_ll[i] = static_cast<HYPRE_BigInt>(J[i]);
 
   // This constructor copies all of the data, so don't worry about ownership of the CSR data
   submesh_parent_vdof_xfer_ = std::make_unique<mfem::HypreParMatrix>(

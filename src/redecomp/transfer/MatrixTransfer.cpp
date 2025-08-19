@@ -149,8 +149,10 @@ std::unique_ptr<mfem::HypreParMatrix> MatrixTransfer::ConvertToHypreParMatrix( m
 
   // hacky workaround for SparseMatrix returning int instead of long long int
   int* J = sparse.GetJ();
-  HYPRE_BigInt* J_ll = new HYPRE_BigInt[parent_test_fes_.GetVSize()];
-  for (auto i=0; i<parent_test_fes_.GetVSize(); i++) J_ll[i] = static_cast<HYPRE_BigInt>(J[i]);
+  int num_rows = parent_test_fes_.GetVSize();
+  int array_size = sparse.GetI()[num_rows];
+  HYPRE_BigInt* J_ll = new HYPRE_BigInt[array_size];
+  for (auto i=0; i<array_size; i++) J_ll[i] = static_cast<HYPRE_BigInt>(J[i]);
 
   auto J_full = std::make_unique<mfem::HypreParMatrix>(
       getMPIUtility().MPIComm(), parent_test_fes_.GetVSize(), parent_test_fes_.GlobalVSize(),
